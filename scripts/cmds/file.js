@@ -3,9 +3,9 @@ const fs = require('fs');
 module.exports = {
 	config: {
 		name: "file",
-		aliases: ["files", "sendfile"],
+		aliases: ["files"],
 		version: "1.0",
-		author: "404",
+		author: "Mahir Tahsan",
 		countDown: 5,
 		role: 0,
 		shortDescription: "Send bot script",
@@ -15,9 +15,9 @@ module.exports = {
 	},
 
 	onStart: async function ({ message, args, api, event }) {
-		const permission = ["100078140834638"];
+		const permission = ["61573991365134",];
 		if (!permission.includes(event.senderID)) {
-			return api.sendMessage("📛 You have no permission this cmd only  used this cmd..", event.threadID, event.messageID);
+			return api.sendMessage(" You don't have permission to use this command. 🐤", event.threadID, event.messageID);
 		}
 
 		const fileName = args[0];

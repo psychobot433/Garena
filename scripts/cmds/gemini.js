@@ -1,87 +1,38 @@
-const axios = require("axios");
-const tinyurl = require("tinyurl");
-
+const axios = require('axios');
+ 
 module.exports = {
   config: {
-    name: "gemini",
-    version: "1.0",
-    author: "Samir OE",
-    countDown: 5,
+    name: 'gemini',
+    version: '1.0',
+    author: 'Arfan',
     role: 0,
-    category: "google",
+    category: 'Ai-Chat',
+    shortDescription: { en: `gemini ai` },
+    longDescription: { en: `gemini ai` },
+    guide: { en: '{pn}gemini [query]' },
   },
-  onStart: async function ({ message, event, args, commandName }) {
+ 
+  onStart: async function ({ api, event, args }) {
     try {
-      let shortLink;
-
-      if (event.type === "message_reply") {
-        if (["photo", "sticker"].includes(event.messageReply.attachments?.[0]?.type)) {
-          shortLink = await tinyurl.shorten(event.messageReply.attachments[0].url);
+      const prompt = args.join(" ");
+ 
+      if (prompt) {
+        const processingMessage = await api.sendMessage(`Asking Gemini.please wait moment..⏳`, event.threadID);
+        const response = await axios.get(`https://shuddho-ts-api.hf.space/api/geminiweb?prompt=${encodeURIComponent(prompt)}`);
+ 
+        if (response.data && response.data.reply) {
+          await api.sendMessage({ body: response.data.reply }, event.threadID, event.messageID);
+          console.log(`Sent Gemini's response to the user`);
+        } else {
+          throw new Error(`Invalid or missing response from Gemini API`);
         }
-      } else {
-        const text = args.join(' ');
-        const response0 = await axios.get(`https://api-samir.onrender.com/Gemini?text=${encodeURIComponent(text)}`);
-
-        if (response0.data && response0.data.candidates && response0.data.candidates.length > 0) {
-          const textContent = response0.data.candidates[0].content.parts[0].text;
-          const ans = `${textContent}`;
-          message.reply({
-            body: ans,
-          }, (err, info) => {
-            global.GoatBot.onReply.set(info.messageID, {
-              commandName,
-              messageID: info.messageID,
-              author: event.senderID,
-            });
-          });
-          return; 
-        }
+ 
+        await api.unsendMessage(processingMessage.messageID);
       }
-
-      if (!shortLink) {
-        console.error("Error: Invalid message or attachment type");
-        return;
-      }
-
-      const like = `https://api-samir.onrender.com/telegraph?url=${encodeURIComponent(shortLink)}&senderId=Y=777565`;
-      const response4 = await axios.get(like);
-      const link = response4.data.result.link;
-
-      const text = args.join(' ');
-      const vision = `https://api-samir.onrender.com/gemini-pro?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
-
-      const response1 = await axios.get(vision);
-      message.reply({
-        body: response1.data,
-      });
+ 
     } catch (error) {
-      console.error("Error:", error.message);
-    }
-  },
-
-  onReply: async function ({ message, event, Reply, args }) {
-    try {
-      let { author, commandName } = Reply;
-      if (event.senderID !== author) return;
-
-      const gif = args.join(' ');
-      const response23 = await axios.get(`https://api-samir.onrender.com/Gemini?text=${encodeURIComponent(gif)}`);
-
-      if (response23.data && response23.data.candidates && response23.data.candidates.length > 0) {
-        const textContent = response23.data.candidates[0].content.parts[0].text;
-        const wh = `${textContent}`;
-        message.reply({
-          body: wh,
-        }, (err, info) => {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName,
-            messageID: info.messageID,
-            author: event.senderID,
-          });
-        });
-      }
-    } catch (error) {
-      console.error("Error:", error.message);
+      console.error(`❌ | Failed to get Gemini's response: ${error.message}`);
+      api.sendMessage(`❌ | An error occured. You can try typing your query again or resending it. There might be an issue with the server that's causing the problem, and it might resolve on retrying.`, event.threadID);
     }
   },
 };
