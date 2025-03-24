@@ -1,57 +1,51 @@
-const { createReadStream, unlinkSync, createWriteStream } = require("fs-extra");
-const { resolve } = require("path");
+const fs = require("fs");
 const axios = require("axios");
+const googleTTS = require("google-tts-api");
 
 module.exports = {
   config: {
     name: "say",
-    aliases: ["bol"],
+    aliases: ["speak", "kotha"],
     version: "1.1",
-    author: "otineeeeyyyyyyyy",
+    author: "✨ Eren Yeh ✨",
     countDown: 5,
     role: 0,
     shortDescription: {
-      en: "text to speech with language",
+      en: "Convert text to Bangla voice"
     },
     longDescription: {
-      en: "text to speech language",
+      en: "Bot will speak your text in Bangla using Google TTS"
     },
-    category: "fun",
+    category: "media",
     guide: {
-      en: "/say [language] [text]: Convert text to speech. Default language is English.\nExample usages:\n/say hi\n/say ja こんにちは"
-    },
-  },
-
-  onStart: async function ({ api, event, args, getLang }) {
-    try {
-      const content = event.type === "message_reply" ? event.messageReply.body : args.join(" ");
-      const supportedLanguages = ["ru", "en", "ko", "ja", "tl", "vi", "in", "ne"];
-      const defaultLanguage = "en"; // Set the default language to "en"
-      const languageToSay = supportedLanguages.some((item) => content.indexOf(item) === 0) ? content.slice(0, content.indexOf(" ")) : defaultLanguage;
-      const msg = languageToSay !== defaultLanguage ? content.slice(3, content.length) : content;
-      const path = resolve(__dirname, "cache", `${event.threadID}_${event.senderID}.mp3`);
-
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(msg)}&tl=${languageToSay}&client=tw-ob`;
-      const response = await axios({
-        method: "GET",
-        url,
-        responseType: "stream",
-      });
-
-      const writer = response.data.pipe(createWriteStream(path));
-      await new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", reject);
-      });
-
-      api.sendMessage(
-        { attachment: createReadStream(path) },
-        event.threadID,
-        () => unlinkSync(path)
-      );
-    } catch (error) {
-      console.error("Error occurred during TTS:", error);
-      // Handle error response here, e.g., send an error message to the user
+      en: "{pn} <your bangla text>"
     }
   },
+
+  onStart: async function ({ args, message }) {
+    const text = args.join(" ");
+    if (!text) return message.reply("দয়া করে একটি বার্তা লিখুন!");
+
+    try {
+      const url = googleTTS.getAudioUrl(text, {
+        lang: 'bn',
+        slow: false,
+        host: 'https://translate.google.com'
+      });
+
+      const path = `${__dirname}/voice.mp3`;
+      const res = await axios.get(url, { responseType: 'arraybuffer' });
+      fs.writeFileSync(path, Buffer.from(res.data, "utf-8"));
+
+      await message.reply({
+        body: `🔈 বললাম: ${text}`,
+        attachment: fs.createReadStream(path)
+      });
+
+      fs.unlinkSync(path);
+    } catch (err) {
+      console.error(err);
+      message.reply("❌ ভয়েস বানাতে সমস্যা হয়েছে!");
+    }
+  }
 };

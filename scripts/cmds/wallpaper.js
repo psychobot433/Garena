@@ -1,83 +1,98 @@
-const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
-
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 module.exports = {
   config: {
-    name: "ws",
-    aliases: [],
-    author: "kshitiz",
-    version: "2.0",
-    cooldowns: 5,
+    name: "wallpaper",
+    aliases: ["wl"],
+    version: "1.1",
+    author: "Samir Œ",
+    countDown: 5,
     role: 0,
     shortDescription: {
-      en: ""
+      en: "get wallpaper"
     },
     longDescription: {
-      en: "Search for wallpapers based on a keyword."
+      en: "get wallpaper"
     },
-    category: "image",
+    category: "tools",
     guide: {
-      en: "{p}ws <keyword> [amount]\nExample: {p}ws nature 3"
+      en: ""
     }
   },
+
   onStart: async function ({ api, event, args }) {
-    if (args.length < 1) {
-      api.sendMessage('Please provide a keyword for the wallpaper search.', event.threadID, event.messageID);
+    if (args.length === 0) {
+      api.sendMessage("Please provide a query to search for images.", event.threadID, event.messageID);
       return;
     }
 
-    const keyword = args[0];
-    let amount = args[1] || 1;
-
-    amount = parseInt(amount);
-    if (isNaN(amount) || amount <= 0) {
-      api.sendMessage('Please provide a valid positive integer for the amount.', event.threadID, event.messageID);
-      return;
-    }
+    const apiKey = "39178311-acadeb32d7e369897e41dba06";
+    const query = encodeURIComponent(args.join(" "));
+    const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&per_page=200`;
 
     try {
-     
-      await fs.ensureDir('cache');
+      const response = await axios.get(apiUrl);
+      const wallpapers = response.data.hits.filter(function(wallpaper) {
+        const imageUrl = wallpaper.largeImageURL;
+        const imageExtension = path.extname(imageUrl);
+        return imageExtension === ".jpg" || imageExtension === ".png";
+      });
 
-      const response = await axios.get(`https://antr4x.onrender.com/get/searchwallpaper?keyword=${keyword}`);
+      if (wallpapers.length === 0) {
+        api.sendMessage("No wallpapers found for the given query.", event.threadID, event.messageID);
+        return;
+      }
 
-      if (response.data.status && response.data.img.length > 0) {
-        amount = Math.min(amount, response.data.img.length);
+      let streams = [];
+      let counter = 0;
 
-        const imgData = [];
-        for (let i = 0; i < amount; i++) {
-          const image = response.data.img[i];
-          const imageName = `wallpaper_${i + 1}.jpg`;
-          const imagePath = path.join('cache', imageName);
-
-          try {
-            const imageResponse = await axios.get(image, { responseType: 'arraybuffer' });
-            await fs.writeFile(imagePath, Buffer.from(imageResponse.data, 'binary'));
-            imgData.push(imagePath);
-          } catch (error) {
-            console.error("Error downloading image:", error);
-            api.sendMessage('An error occurred while downloading images. Please try again later.', event.threadID, event.messageID);
-            return;
-          }
+      for (const wallpaper of wallpapers) {
+        if (counter >= 10) {
+          break;
         }
 
-        api.sendMessage({
-          attachment: imgData.map(imgPath => fs.createReadStream(imgPath)),
-          body: `Wallpapers based on '${keyword}' 🌟`,
-        }, event.threadID, (err) => {
-          if (err) console.error("Error sending images:", err);
+        const imageUrl = wallpaper.largeImageURL;
+        const imageExtension = path.extname(imageUrl);
 
-          imgData.forEach(imgPath => {
-            fs.unlinkSync(imgPath);
-          });
-        });
-      } else {
-        api.sendMessage('No wallpapers found for the given keyword.', event.threadID, event.messageID);
+        let imagePath = path.join(__dirname, `/cache/wallpaper${counter}${imageExtension}`);
+        let hasError = false;
+
+        try {
+          const imageResponse = await axios.get(imageUrl, { responseType: "arraybuffer" });
+          fs.writeFileSync(imagePath, Buffer.from(imageResponse.data, "binary"));
+        } catch (error) {
+          console.error(error);
+          hasError = true;
+        }
+
+        if (!hasError) {
+          streams.push(fs.createReadStream(imagePath).on("end", function() {
+            if (fs.existsSync(imagePath)) {
+              fs.unlink(imagePath, function(err) {
+                if (err) console.error(err);
+              });
+            }
+          }));
+
+          counter += 1;
+        }
       }
+
+      if (streams.length > 0) {
+        let msg = {
+          body: `📷 Random Wallpaper Result:`,
+          attachment: streams
+        };
+
+        api.sendMessage(msg, event.threadID, event.messageID);
+      } else {
+        api.sendMessage("An error occurred while fetching the wallpapers.", event.threadID, event.messageID);
+      }
+
     } catch (error) {
-      console.error('Error fetching wallpaper images:', error);
-      api.sendMessage('please provide a single keyword\or try again with diff keywords', event.threadID, event.messageID);
+      console.error(error);
+      api.sendMessage("An error occurred while fetching wallpapers.", event.threadID, event.messageID);
     }
-  },
+  }
 };

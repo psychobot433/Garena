@@ -1,63 +1,54 @@
-const DIG = require("discord-image-generation");
-const fs = require("fs-extra");
+const axios = require('axios');
+const jimp = require("jimp");
+const fs = require("fs");
 
 module.exports = {
   config: {
     name: "wanted",
-    aliases:"want",
+    aliases: ["chorgang"],
     version: "1.0",
-    author: "KSHITIZ",
-    countDown: 1,
+    author: "AceGun",
+    countDown: 5,
     role: 0,
-    shortDescription: "wanted poster",
+    shortdescription: "wanted frame for fun purpose",
     longDescription: "",
-    category: "meme",
-    guide: "{pn} {{[on | off]}}",
-    envConfig: {
-      deltaNext: 5
-    }
+    category: "fun",
+    guide: "{pn}wanted @tag @tag"
   },
 
-  langs: {
-    vi: {
-      noTag: ""
-    },
-    en: {
-      noTag: "You must tag the person you want to "
-    }
-  },
-
-  onStart: async function ({ event, message, usersData, args, getLang }) 
-  {
-
-    let mention = Object.keys(event.mentions)
-    let uid;
-
-  
-
-    if(event.type == "message_reply"){
-    uid = event.messageReply.senderID
-    } else{
-      if (mention[0]){
-        uid = mention[0]
-      }else{
-        console.log(" jsjsj")
-        uid = event.senderID}
+  onStart: async function ({ message, event, args }) {
+    const mention = Object.keys(event.mentions);
+    if (mention.length < 2) {
+      message.reply("Tag your two friends to invite them in wanted frame");
+      return;
     }
 
-let url = await usersData.getAvatarUrl(uid)
-let avt = await new DIG.Wanted().getImage(url)
+    // Add the sender ID to the `mention` array
+    mention.push(event.senderID);
 
+    let [one, two, three] = mention;
 
- 
-      const pathSave = `${__dirname}/tmp/wanted.png`;
-  fs.writeFileSync(pathSave, Buffer.from(avt));
-    let body = "NEPAL KO WANTED MANXE"
-    if(!mention[0]) body="NEPAL KO WANTED MANXE"
-    message.reply({body:body,
-attachment: fs.createReadStream(pathSave)
-    }, () => fs.unlinkSync(pathSave));
-
-
+    try {
+      const imagePath = await bal(one, two, three);
+      await message.reply({
+        body: "These guys are wanted",
+        attachment: fs.createReadStream(imagePath)
+      });
+    } catch (error) {
+      console.error("Error while running command:", error);
+      await message.reply("an error occurred");
+    }
   }
 };
+
+async function bal(one, two, three) {
+  const avatarOne = await jimp.read(`https://graph.facebook.com/${one}/picture?width=512&height=512&access_token=66262`);
+  const avatarTwo = await jimp.read(`h8568379%7Cc1e620fa708a1d5696fb991c1bde56ttps://graph.facebook.com/${two}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`);
+  const avatarThree = await jimp.read(`https://graph.facebook.com/${three}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`);
+
+  const image = await jimp.read("https://i.ibb.co/7yPR6Xf/image.jpg");
+  image.resize(2452, 1226).composite(avatarOne.resize(405, 405), 206, 345).composite(avatarTwo.resize(400, 400), 1830, 350).composite(avatarThree.resize(450, 450), 1010, 315);
+  const imagePath = "Wanted.png";
+  await image.writeAsync(imagePath);
+  return imagePath;
+}
