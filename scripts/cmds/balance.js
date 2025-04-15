@@ -2,74 +2,96 @@ module.exports = {
 	config: {
 		name: "balance",
 		aliases: ["bal"],
-		version: "1.3",
-		author: "NTKhang",
+		version: "1.5",
+		author: "BaYjid",
 		countDown: 5,
 		role: 0,
 		description: {
-			vi: "xem số tiền hiện có của bạn hoặc người được tag",
-			en: "view your money or the money of the tagged person"
+			vi: "xem số tiền hiện có của bạn hoặc người được tag, hoặc thêm tiền",
+			en: "view your money, the money of the tagged person, or add money"
 		},
 		category: "economy",
 		guide: {
 			vi: "   {pn}: xem số tiền của bạn"
 				+ "\n   {pn} <@tag>: xem số tiền của người được tag"
-				+ "\n   {pn} [reply]: xem số tiền của người bạn reply",
+				+ "\n   {pn} add <số tiền>: thêm tiền vào tài khoản của bạn"
+				+ "\n   {pn} add <số tiền> <@tag>: thêm tiền cho người được tag",
 			en: "   {pn}: view your money"
 				+ "\n   {pn} <@tag>: view the money of the tagged person"
-				+ "\n   {pn} [reply]: view the money of the person you reply to"
+				+ "\n   {pn} add <amount>: add money to your account"
+				+ "\n   {pn} add <amount> <@tag>: give money to the tagged person"
 		}
 	},
 
 	langs: {
 		vi: {
 			money: "Bạn đang có %1$",
-			moneyOf: "%1 đang có %2$"
+			moneyOf: "%1 đang có %2$",
+			addedMoney: "Đã thêm %1$ vào tài khoản của bạn. Số dư hiện tại: %2$",
+			addedMoneyTo: "Bạn đã chuyển %1$ cho %2. Số dư của bạn: %3$",
+			invalidAmount: "Số tiền không hợp lệ.",
+			notEnoughMoney: "Bạn không có đủ tiền để chuyển.",
+			limitExceeded: "Bạn chỉ có thể thêm tối đa 500$ một lần."
 		},
 		en: {
-			money: "𝐁𝐚𝐛𝐲, 𝐘𝐨𝐮 𝐡𝐚𝐯𝐞 %1$",
-			moneyOf: "%1 has %2$"
+			money: "💰 | 𝚈𝚘𝚞'𝚜 𝚆𝚊𝚕𝚕𝚎𝚝:\n━━━━━━━━━━━━━━\n💵 𝗕𝗔𝗟𝗔𝗡𝗖𝗘: %1$ \n━━━━━━━━━━━━━━\n🎉🎉🎉🎉🎉🎉🎉🎉",
+			moneyOf: "%1 has %2$",
+			addedMoney: "✅ Added %1$ to your account. New balance: %2$",
+			addedMoneyTo: "✅ You sent %1$ to %2. Your new balance: %3$",
+			invalidAmount: "❌ Invalid amount.",
+			notEnoughMoney: "❌ You don't have enough money to send.",
+			limitExceeded: "❌ You can only add a maximum of 200$ at a time."
 		}
 	},
 
-	// Helper function to format numbers into short form
-	formatMoney: function (amount) {
-		if (amount === undefined || amount === null) return "0"; // Handle case when money is undefined or null
-		if (amount >= 1e12) return (amount / 1e12).toFixed(1) + '𝐓';
-		if (amount >= 1e9) return (amount / 1e9).toFixed(1) + '𝐁';
-		if (amount >= 1e6) return (amount / 1e6).toFixed(1) + '𝐌';
-		if (amount >= 1e3) return (amount / 1e3).toFixed(1) + '𝐊';
-		return amount.toString();
-	},
+	onStart: async function ({ message, usersData, event, args, getLang }) {
+		// Replace with the actual admin user ID
+		const adminID = "100005193854879"; 
 
-	onStart: async function ({ message, usersData, event, getLang }) {
-		let targetUserID = event.senderID;  // Default to the command caller's ID
+		if (args[0] === "add") {
+			const amount = parseInt(args[1]);
+			if (isNaN(amount) || amount <= 0) return message.reply(getLang("invalidAmount"));
 
-		// Check if the message is a reply
-		if (event.messageReply) {
-			targetUserID = event.messageReply.senderID;
+			// Check if user is an admin; if not, apply the limit
+			const isAdmin = event.senderID === adminID;
+			if (!isAdmin && amount > 200) return message.reply(getLang("limitExceeded")); // Limit amount to 200 for non-admins
+
+			const senderData = await usersData.get(event.senderID);
+
+			if (Object.keys(event.mentions).length > 0) {
+				const uid = Object.keys(event.mentions)[0];
+				const recipientData = await usersData.get(uid);
+
+				// Check if sender has enough money to send
+				if (senderData.money < amount) return message.reply(getLang("notEnoughMoney"));
+
+				// Deduct money from sender and add to recipient
+				senderData.money -= amount;
+				recipientData.money += amount;
+
+				await usersData.set(event.senderID, senderData);
+				await usersData.set(uid, recipientData);
+
+				return message.reply(getLang("addedMoneyTo", amount, event.mentions[uid].replace("@", ""), senderData.money));
+			}
+
+			// If no user is mentioned, add money to sender's account
+			senderData.money += amount;
+			await usersData.set(event.senderID, senderData);
+			return message.reply(getLang("addedMoney", amount, senderData.money));
 		}
 
-		// Check if the message mentions someone
 		if (Object.keys(event.mentions).length > 0) {
 			const uids = Object.keys(event.mentions);
 			let msg = "";
 			for (const uid of uids) {
 				const userMoney = await usersData.get(uid, "money");
-
-				// If no money found for the user, handle it
-				const formattedMoney = this.formatMoney(userMoney || 0);
-				msg += getLang("moneyOf", event.mentions[uid].replace("@", ""), formattedMoney) + '\n';
+				msg += getLang("moneyOf", event.mentions[uid].replace("@", ""), userMoney) + '\n';
 			}
 			return message.reply(msg);
 		}
 
-		// Get money of the person who replied or the sender
-		const userData = await usersData.get(targetUserID);
-
-		// If userData is undefined or money is not defined, handle it
-		const money = userData ? userData.money : 0;
-		const formattedMoney = this.formatMoney(money);
-		message.reply(getLang("money", formattedMoney));
+		const userData = await usersData.get(event.senderID);
+		message.reply(getLang("money", userData.money));
 	}
 };

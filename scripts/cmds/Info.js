@@ -1,98 +1,104 @@
-const fs = require('fs');
-const moment = require('moment-timezone');
+const fs = require("fs-extra");
+const request = require("request");
+const os = require("os");
 
 module.exports = {
-  config: {
-    name: "info",
-    aliases: ["infor", "in4"],
-    version: "2.0",
-    author: "Anthony | Edited by Xos Eren",
-    countDown: 5,
-    role: 0,
-    shortDescription: {
-      en: "Sends information about the bot and admin along with an image."
-    },
-    longDescription: {
-      en: "Sends information about the bot and admin along with an image."
-    },
-    category: "Information",
-    guide: {
-      en: "{pn}"
-    }
-  },
+  config: {
+    name: "info",
+    version: "1.3",
+    author: "✨ Eren Yeh ✨",
+    shortDescription: "Display bot and user information along with uptime and Imgur images/videos.",
+    longDescription: "Show detailed info about the bot and the user, with uptime and Imgur image/video features.",
+    category: "INFO",
+    guide: {
+      en: "[user]",
+    },
+  },
 
-  onStart: async function ({ message, api }) {
-    await this.sendInfo(message, api);
-  },
+  onStart: async function ({ api, event, args }) {
+    // Replace with your info
+    const userInfo = {
+      name: "Raad (Eren)",  // Replace with your name
+      age: "16+",           // Replace with your age
+      location: "Dhaka",    // Replace with your location
+      bio: "Bot & JavaScript Lover | Always Learning!", // Replace with your bio
+      botName: "🕸️ spideY 🥷", // Replace with bot's name
+      botVersion: "1.0",    // Replace with bot's version
+    };
 
-  onChat: async function ({ event, message, api }) {
-    if (event.body && event.body.toLowerCase() === "info") {
-      await this.sendInfo(message, api);
-    }
-  },
+    // Calculate bot uptime
+    const botUptime = process.uptime(); // in seconds
+    const botHours = Math.floor(botUptime / 3600);
+    const botMinutes = Math.floor((botUptime % 3600) / 60);
+    const botSeconds = Math.floor(botUptime % 60);
+    const formattedBotUptime = `${botHours} hours, ${botMinutes} minutes, ${botSeconds} seconds`;
 
-  sendInfo: async function (message, api) {
-    try {
-      const botName = "🕸️ 𝐒𝐩𝐢𝐝𝐞𝐘🕷️";
-      const botPrefix = "𝐄𝐫𝐞𝐧";
-      const authorName = "𝐑𝐚𝐚𝐝";
-      const authorFB = "𝐑𝐚 𝐀𝐚𝐝";
-      const authorInsta = "raadx102";
-      const status = "𝗦𝗶𝗻𝗴𝗹𝗲";
+    // Calculate system uptime in days, hours, minutes, and seconds
+    const systemUptime = os.uptime(); // in seconds
+    const sysDays = Math.floor(systemUptime / (3600 * 24)); // Convert seconds to days
+    const sysHours = Math.floor((systemUptime % (3600 * 24)) / 3600); // Remaining hours
+    const sysMinutes = Math.floor((systemUptime % 3600) / 60); // Remaining minutes
+    const sysSeconds = Math.floor(systemUptime % 60); // Remaining seconds
+    const formattedSystemUptime = `${sysDays} days, ${sysHours} hours, ${sysMinutes} minutes, ${sysSeconds} seconds`;
 
-      // Load JSON file safely
-      let urls;
-      try {
-        if (fs.existsSync('scripts/cmds/assets/Ayan.json')) {
-          urls = JSON.parse(fs.readFileSync('scripts/cmds/assets/Ayan.json'));
-        } else {
-          urls = ["https://i.imgur.com/PjuPA48.jpeg"]; // Default fallback image
-        }
-      } catch (err) {
-        console.error("Error reading JSON file:", err);
-        urls = ["https://i.imgur.com/PjuPA48.jpeg"];
-      }
+    // Example Imgur video links
+    const imgurLinks = [
+      "https://i.imgur.com/bde5ahr.mp4",  // Replace with actual Imgur video links
+      "https://i.imgur.com/QOBaSLt.mp4",
+    ];
 
-      const link = urls[Math.floor(Math.random() * urls.length)];
+    // Download videos and send them as attachments
+    const downloadVideo = (url, filePath) => {
+      return new Promise((resolve, reject) => {
+        request(url)
+          .pipe(fs.createWriteStream(filePath))
+          .on("close", resolve)
+          .on("error", reject);
+      });
+    };
 
-      const now = moment().tz('Asia/Dhaka');
-      const date = now.format('MMMM Do YYYY');
-      const time = now.format('h:mm:ss A');
+    // Construct the body message with more space
+    const bodyMsg = `
+Information: 🥷
 
-      const uptime = process.uptime();
-      const seconds = Math.floor(uptime % 60);
-      const minutes = Math.floor((uptime / 60) % 60);
-      const hours = Math.floor((uptime / (60 * 60)) % 24);
-      const days = Math.floor(uptime / (60 * 60 * 24));
-      const uptimeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+- Name: ${userInfo.name}
+- Age: ${userInfo.age}
+- Location: ${userInfo.location}
+- Bio: ${userInfo.bio}
 
-      const sentMessage = await message.reply("🔄 Loading…");
+Bot Details:
 
-      const messageContent = `
-         🎀 𝐀𝐝𝐦𝐢𝐧 𝐈𝐧𝐟𝐨 ☮
-──────────────────
-☮ 𝐍𝐚𝐦𝐞: ${authorName}  
+- Bot Name: ${userInfo.botName}
+- Bot Version: ${userInfo.botVersion}
+- Bot Uptime: ${formattedBotUptime}
 
-☮ 𝐅𝐛: ${authorFB}  
+System Uptime:
 
-☮ 𝐏𝐫𝐞𝐟𝐢𝐱: ${botPrefix}  
+- System Uptime: ${formattedSystemUptime}
 
-☮ 𝐑𝐞𝐥𝐚𝐭𝐢𝐨𝐧𝐬𝐡𝐢𝐩: ${status}
-  
-☮ 𝐈𝐠: ${authorInsta}  
+─────────────────────
+`;
 
-☮ 𝐓𝐢𝐦𝐞: ${time}  
+    // Prepare video attachments
+    const videoPaths = [];
+    for (let i = 0; i < imgurLinks.length; i++) {
+      const videoPath = __dirname + `/cache/video${i}.mp4`;
+      await downloadVideo(imgurLinks[i], videoPath);
+      videoPaths.push(videoPath);
+    }
 
-☮ 𝐔𝐩𝐭𝐢𝐦𝐞: ${uptimeString}  
-
-☮ 𝐁𝐨𝐭: ${botName}  
-──────────────────`;
-
-      await api.editMessage(messageContent, sentMessage.messageID);
-
-    } catch (err) {
-      console.error("Error in sendInfo function:", err);
-      return message.reply("❌ An error occurred while fetching system statistics.");
-    }
-  }
+    // Send message with info and video attachments
+    api.sendMessage(
+      { 
+        body: bodyMsg, 
+        attachment: videoPaths.map(path => fs.createReadStream(path))
+      },
+      event.threadID,
+      () => {
+        // Clean up downloaded video files
+        videoPaths.forEach(path => fs.unlinkSync(path));
+      },
+      event.messageID
+    );
+  },
 };
