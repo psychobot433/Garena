@@ -36,33 +36,38 @@
   },
   "adminBot": [
     "100075964867229",
-    ""
+    "61573052122735"
   ],
   "whiteListMode": {
     "enable": false,
     "whiteListIds": [
+      "100075964867229",
+      "",
+      "",
+      "",
       ""
+      
     ],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
-  "nickNameBot": "🕸️ 𝗦𝗢𝗨𝗥𝗔𝗩  🕷️",
-  "prefix": "Eren",
+  "nickNameBot": "☆ 𝗦𝗢𝗨𝗥𝗔𝗩 ☆ ",
+  "prefix": ".",
   "BaYjidnapi": "",
   "api": "",
   "api2": "",
   "api3": "",
-  "authorName": "𝗦𝗢𝗨𝗥𝗔𝗩😇",
-  "facebook2": "https://www.facebook.com/profile.php?id=100075964867229",
-  "facebook": "https://www.facebook.com/profile.php?id=100075964867229",
-  "email": "sourabnath991@gmail.com",
-  "replit": "❌❌",
-  "github": "❌❌",
-  "insta": "❌❌",
-  "age": "20",
-  "TG": "❌❌",
+  "authorName": "SOURAV",
+  "facebook2": "https://www.facebook.com/100000654976375",
+  "facebook": "https://www.facebook.com/100086680386976",
+  "email": "ullash263@gmail.com",
+  "replit": "https://replit.com/@ullash264",
+  "github": "Find out.",
+  "insta": "no",
+  "age": "21+",
+  "TG": "",
   "database": {
-    "type": "mongodb",
-    "uriMongodb": "mongodb+srv://eren:eren1@cluster0.02ou6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    "type": "sqlite",
+    "uriMongodb": "",
     "autoSyncWhenStart": false,
     "autoRefreshThreadInfoFirstTime": true,
     "notes": "(1) type selects 'json' or 'sqlite' or 'mongodb'. If you choose mongodb, enter uri connect mongodb in the uriMongodb section, instructions to get uri connect mongodb at: https://youtu.be/z1f9urHW5xY. I recommend using 'mongodb' or 'sqlite', json is not recommended because it is not stable. (2) when you set autoSyncWhenStart to true, the bot will automatically synchronize the data in the database when starting the bot, this will make the bot start slower. (3) when youf set autoRefreshThreadInfoFirstTime to true, the bot will automatically refresh the thread information when get first message from the thread since starting the bot"
@@ -172,7 +177,7 @@
   "whiteListModeThread": {
     "enable": false,
     "whiteListThreadIds": [
-      ""
+      "61573052122735"
     ],
     "notes": "if you enable this feature, only the thread in the whiteListThreadIds list can use the bot",
     "how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
